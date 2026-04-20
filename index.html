@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Break Calculator</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #fff; color: #111; padding: 2rem; max-width: 480px; margin: 0 auto; }
+  .label { font-size: 13px; color: #666; margin-bottom: 6px; }
+  .input-row { display: flex; gap: 8px; align-items: center; margin-bottom: 1.25rem; }
+  .time-input { width: 68px; text-align: center; font-size: 22px; font-weight: 500; padding: 8px 0; border: 1px solid #ddd; border-radius: 8px; background: transparent; color: #111; }
+  .sep { font-size: 20px; font-weight: 500; color: #999; }
+  .result-card { background: #f5f5f3; border-radius: 12px; padding: 1.25rem 1.5rem; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; }
+  .result-label { font-size: 13px; color: #666; margin-bottom: 2px; }
+  .result-val { font-size: 30px; font-weight: 500; color: #111; }
+  .result-sub { font-size: 12px; color: #999; margin-top: 2px; }
+  .mode-row { display: flex; gap: 6px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .mode-btn { padding: 5px 13px; border-radius: 99px; border: 1px solid #ddd; background: transparent; cursor: pointer; font-size: 12px; color: #666; }
+  .mode-btn.active { background: #f5f5f3; color: #111; font-weight: 500; border-color: #bbb; }
+  .bar-wrap { height: 6px; background: #eee; border-radius: 99px; margin: 1rem 0 0.5rem; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 99px; background: #3b82f6; transition: width 0.3s ease; }
+  .hint { font-size: 12px; color: #999; line-height: 1.6; }
+  .quick-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 1.25rem; }
+  .quick-btn { padding: 5px 12px; border-radius: 8px; border: 1px solid #ddd; background: transparent; cursor: pointer; font-size: 12px; color: #666; }
+  .quick-btn:hover { background: #f5f5f3; }
+  .divider { height: 1px; background: #eee; margin: 1rem 0; }
+  .zone-text { font-size: 13px; color: #555; line-height: 1.6; }
+  h1 { font-size: 18px; font-weight: 500; margin-bottom: 1.5rem; }
+</style>
+</head>
+<body>
+<h1>Break calculator</h1>
+<div class="label">How long did you work?</div>
+<div class="input-row">
+  <input class="time-input" id="hrs" type="number" min="0" max="12" value="0" oninput="calc()">
+  <span class="sep">h</span>
+  <input class="time-input" id="mins" type="number" min="0" max="59" value="45" oninput="calc()">
+  <span class="sep">m</span>
+</div>
+<div class="label">Quick fill</div>
+<div class="quick-row">
+  <button class="quick-btn" onclick="set(0,25)">25 min</button>
+  <button class="quick-btn" onclick="set(0,45)">45 min</button>
+  <button class="quick-btn" onclick="set(1,0)">1 hr</button>
+  <button class="quick-btn" onclick="set(1,30)">1h 30m</button>
+  <button class="quick-btn" onclick="set(2,0)">2 hrs</button>
+  <button class="quick-btn" onclick="set(3,0)">3 hrs</button>
+</div>
+<div class="label">Formula</div>
+<div class="mode-row">
+  <button class="mode-btn active" onclick="setMode('flowtime', this)">Flowtime (20%)</button>
+  <button class="mode-btn" onclick="setMode('ratio', this)">5:1 ratio</button>
+  <button class="mode-btn" onclick="setMode('ultradian', this)">Ultradian</button>
+</div>
+<div class="result-card">
+  <div>
+    <div class="result-label">Take a break of</div>
+    <div class="result-val" id="break-val">9 min</div>
+    <div class="result-sub">Back by <span id="end-time">—</span></div>
+  </div>
+  <div style="text-align:right;">
+    <div class="result-label">Max recommended</div>
+    <div style="font-size:20px; font-weight:500;" id="max-val">15 min</div>
+  </div>
+</div>
+<div class="bar-wrap"><div class="bar-fill" id="bar" style="width:60%"></div></div>
+<div class="hint" id="hint-text">Flowtime: break = 20% of work time. Scales break length to actual depletion.</div>
+<div class="divider"></div>
+<div class="zone-text" id="zone-text"></div>
+<script>
+let mode = 'flowtime';
+function set(h, m) { document.getElementById('hrs').value = h; document.getElementById('mins').value = m; calc(); }
+function setMode(m, btn) { mode = m; document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); const hints = { flowtime: 'Flowtime: break = 20% of work time. Scales break length to actual depletion.', ratio: '5:1 ratio: for every 5 min worked, take 1 min break. More granular, good for shorter sessions.', ultradian: 'Ultradian rhythm: the brain naturally cycles ~90 min. Break scales with how deep into the cycle you went.' }; document.getElementById('hint-text').textContent = hints[m]; calc(); }
+function calc() { const h = parseInt(document.getElementById('hrs').value)||0; const m = parseInt(document.getElementById('mins').value)||0; const total = h*60+m; if(total===0){document.getElementById('break-val').textContent='—';return;} let brk,maxBrk; if(mode==='flowtime'){brk=Math.round(total*0.2);maxBrk=Math.min(brk+5,30);}else if(mode==='ratio'){brk=Math.round(total/5);maxBrk=Math.min(brk+5,30);}else{const pct=Math.min(total/90,1);brk=Math.round(5+pct*25);maxBrk=Math.min(brk+8,45);} brk=Math.max(brk,5); document.getElementById('break-val').textContent=brk+' min'; document.getElementById('max-val').textContent=maxBrk+' min'; const now=new Date(); const end=new Date(now.getTime()+brk*60000); const hh=end.getHours()%12||12; const mm=String(end.getMinutes()).padStart(2,'0'); const ap=end.getHours()>=12?'pm':'am'; document.getElementById('end-time').textContent=hh+':'+mm+ap; const pct=Math.min((brk/30)*100,100); document.getElementById('bar').style.width=pct+'%'; let zone=''; if(total<=30)zone='Short session — a quick reset (eyes closed, stretch) is enough.'; else if(total<=60)zone='Good block — step away from your screen. Grab water, do a stretch, or a 2-min eyes-closed reset.'; else if(total<=90)zone='Solid session — take a proper break. Move around, look outside, no screens for the first half.'; else zone="Long session — you've earned a real break. Get up, go outside if possible. No screens."; document.getElementById('zone-text').textContent=zone; }
+calc();
+</script>
+</body>
+</html>
